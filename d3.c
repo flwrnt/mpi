@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 	Tend = MPI_Wtime(); 
 
 	if(wrank == 0)
-		printf("Total time : %f ", Tend - Tbegin);
+		fprintf(stderr, "Total time : %f\n", Tend - Tbegin);
 
 	return 0;
 }
