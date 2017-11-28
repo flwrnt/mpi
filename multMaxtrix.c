@@ -94,13 +94,11 @@ int main(int argc, char** argv) {
 		
 		displs[0] = 0;
 		executionArray[0] = range;
-
-		if(rest > 0)
-			executionArray[0] += 1;
-
+		
 		for(int i = 1; i < world_size; i++){
         	executionArray[i] = range;
-			if(i < rest)
+
+			if(i <= rest)
 				executionArray[i] += 1;
 
         	displs[i] =  displs[i - 1] + executionArray[i - 1];
@@ -130,18 +128,6 @@ int main(int argc, char** argv) {
 	}
 
 	MPI_Gatherv(resultLine, executionArray[wrank], Line, res.data, executionArray, displs, Line, 0, MPI_COMM_WORLD);
-	
-	if(wrank == 1){
-		for(int i = 0; i < world_size; i++){
-			printf("%d ", executionArray[i]);	
-		}
-	}
-
-	if(wrank == 1){
-		for(int i = 0; i < world_size; i++){
-			printf("%d ", displs[i]);	
-		}
-	}
 
 	if (wrank == 0) displayMatrix(&res);
 
