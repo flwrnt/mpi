@@ -70,6 +70,9 @@ int main(int argc, char** argv) {
 	int n, range, rest = 0;
 	int executionArray[world_size];
 	int displs[world_size];
+	double Tbegin, Tend;
+
+	Tbegin = MPI_Wtime(); 
 
 	if (wrank == 0) {
   	    n = init(&left, &right);
@@ -132,5 +135,11 @@ int main(int argc, char** argv) {
 	if (wrank == 0) displayMatrix(&res);
 
 	MPI_Finalize();
+
+	Tend = MPI_Wtime(); 
+
+	if(wrank == 0)
+		printf("Total time : %f ", Tend - Tbegin);
+		
 	return 0;
 }
