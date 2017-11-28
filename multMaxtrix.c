@@ -32,7 +32,7 @@ MPI_Datatype createLine(int cols)
 
 int init(Matrix *left, Matrix *right) {
 	int size, i = 0;
-  char c;
+  	char c;
 	fscanf(stdin, "%d", &size);
 
 	*left = createMatrix(size);
@@ -68,6 +68,8 @@ int main(int argc, char** argv) {
 
     Matrix left, right, res;
 	int n, range, rest = 0;
+	int executionArray[world_size];
+	int displs[world_size];
 
 	if (wrank == 0) {
   	    n = init(&left, &right);
@@ -87,65 +89,59 @@ int main(int argc, char** argv) {
 	if (wrank != 0) {
 		left = createMatrix(n);
 		right = createMatrix(n);
+	}else{
+        rest = n % world_size;
+		
+		displs[0] = 0;
+		executionArray[0] = range;
+
+		if(rest > 0)
+			executionArray[0] += 1;
+
+		for(int i = 1; i < world_size; i++){
+        	executionArray[i] = range;
+			if(i < rest)
+				executionArray[i] += 1;
+
+        	displs[i] =  displs[i - 1] + executionArray[i - 1];
+   		 }
 	}
+
+	MPI_Bcast(&executionArray, world_size, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&displs, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
 	res = createMatrix(n);
 
 	MPI_Bcast(left.data, n, Line, 0, MPI_COMM_WORLD);
 	MPI_Bcast(right.data, n, Line, 0, MPI_COMM_WORLD);
 
-	// displayMatrix(&left);
-	// displayMatrix(&right);
-
 	int * resultLine = (int*) malloc(n*n*sizeof(int));
 	int index = 0;
 
-	for (int j=0; j<range; j++) {
+	for (int j=0; j<executionArray[wrank]; j++) {
 		for (int col=0; col<left.cols; ++col, ++index)
 		{
 			int result = 0;
 			for (int i=0; i<left.rows; ++i)
-				result += left.data[(range*wrank+j)*left.cols + i] * right.data[col + i*left.cols];
+				result += left.data[(displs[wrank]+j)*left.cols + i] * right.data[col + i*left.cols];
 
 			resultLine[index] = result;
-            //printf("%d ", resultLine[index]);
 		}
 	}
 
-    if(wrank == world_size - 1){
-        rest = n % world_size;
+	MPI_Gatherv(resultLine, executionArray[wrank], Line, res.data, executionArray, displs, Line, 0, MPI_COMM_WORLD);
+	
+	if(wrank == 1){
+		for(int i = 0; i < world_size; i++){
+			printf("%d ", executionArray[i]);	
+		}
+	}
 
-        for (int j=0; j<rest; j++) {
-            for (int col=0; col<left.cols; ++col, ++index)
-            {
-                int result = 0;
-                for (int i=0; i<left.rows; ++i)
-                    result += left.data[(range*(wrank+1)+j)*left.cols + i] * right.data[col + i*left.cols];
-                resultLine[index] = result;
-                //printf("%d ", resultLine[index]);
-            }
-        }
-    }
-
-    int * rcounts = (int*) malloc(world_size*sizeof(int));
-    int * displs = (int*) malloc(world_size*sizeof(int));
-
-
-	MPI_Bcast(&rest, 1, MPI_INT, world_size-1, MPI_COMM_WORLD);
-
-
-    for(int i = 0; i < world_size; i++){
-        rcounts[i] = range;
-        displs[i] =  i * range;
-    }
-
-    rcounts[world_size-1] = range+rest;
-
-    if(wrank != world_size - 1){
-        rest = 0;
-    }
-
-	MPI_Gatherv(resultLine, range+rest, Line, res.data, rcounts, displs, Line, 0, MPI_COMM_WORLD);
+	if(wrank == 1){
+		for(int i = 0; i < world_size; i++){
+			printf("%d ", displs[i]);	
+		}
+	}
 
 	if (wrank == 0) displayMatrix(&res);
 
