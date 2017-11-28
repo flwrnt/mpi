@@ -72,10 +72,8 @@ int main(int argc, char** argv) {
 	int displs[world_size];
 	double Tbegin, Tend;
 
-	Tbegin = MPI_Wtime(); 
-
 	if (wrank == 0) {
-  	    n = init(&left, &right);
+		n = init(&left, &right);
 	}
 
 	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -85,6 +83,8 @@ int main(int argc, char** argv) {
 		MPI_Finalize();
 		return 0;
 	}
+
+	Tbegin = MPI_Wtime(); 
 
 	range = n / world_size;
 	MPI_Datatype Line = createLine(n);
@@ -135,14 +135,47 @@ int main(int argc, char** argv) {
 
 	MPI_Gatherv(resultLine, executionArray[wrank], Line, res.data, executionArray, displs, Line, 0, MPI_COMM_WORLD);
 
-	if (wrank == 0) displayMatrix(&res);
-
-	MPI_Finalize();
-
 	Tend = MPI_Wtime(); 
 
-	if(wrank == 0)
-		printf("Total time : %f ", Tend - Tbegin);
+	if (wrank == 0) {
+		printf("Parallel : %f\n", Tend - Tbegin);
+		// displayMatrix(&res);
+
+		Matrix result = createMatrix(n);
+		Tbegin = MPI_Wtime();
+		for (int row=0; row<left.rows; ++row)
+		{
+			for (int col=0; col<left.cols; ++col)
+			{
+				int one = 0;
+				for (int i=0; i<left.rows; ++i)
+					one += left.data[row*left.cols + i] * right.data[col + i*right.cols];
+
+				result.data[row*result.cols + col] = one;
+			}
+		}
+
+		printf("Serial : %f\n", MPI_Wtime()-Tbegin);
+
+		// Comparaison des résultats.
+		int success = 1;
+		for (int i=0; i<result.rows*result.cols; ++i) {
+			if (res.data[i] != result.data[i]) {
+				success = 0;
+				break;
+			}
+		}
+		printf("Succès ? %d.\n", success);
+
+		free(res.data);
+		free(result.data);
+	}
+	MPI_Type_free(&Line);
+	free(left.data);
+	free(right.data);
+	free(resultLine);
+	
+	MPI_Finalize();
 
 	return 0;
 }
