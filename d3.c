@@ -16,7 +16,7 @@ Matrix createMatrix(int size)
 	result.cols = size;
 	result.data = (int*) malloc(size*size*sizeof(int));
 
-  if (!result.data) printf("matrix allocation error\n");
+	if (!result.data) fprintf(stderr, "matrix allocation error\n");
 
 	return result;
 }
@@ -32,21 +32,21 @@ MPI_Datatype createLine(int cols)
 
 int init(Matrix *left, Matrix *right) {
 	int size, i = 0;
-  	char c;
+	char c;
 	fscanf(stdin, "%d", &size);
 
 	*left = createMatrix(size);
 	*right = createMatrix(size);
 
 	while (fscanf(stdin, "%d%c", &left->data[i], &c) != EOF) {
-    if (c == '\n') break;
+		if (c == '\n') break;
 		i++;
-  }
+	}
 
 	i = 0;
 	while (fscanf(stdin, "%d", &right->data[i]) != EOF) {
 		i++;
-  }
+	}
 
 	return size;
 }
@@ -60,13 +60,13 @@ void displayMatrix(Matrix *matrix){
 
 int main(int argc, char** argv) {
 
- 	MPI_Init(&argc, &argv);
+	MPI_Init(&argc, &argv);
 
 	int world_size, wrank;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
 
-    Matrix left, right, res;
+	Matrix left, right, res;
 	int n, range, rest = 0;
 	int executionArray[world_size];
 	int displs[world_size];
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 	if (world_size > n) {
-		if (wrank == 0) printf("to many process compare to size\n");
+		if (wrank == 0) fprintf(stderr, "to many process compare to size\n");
 		MPI_Finalize();
 		return 0;
 	}
@@ -95,10 +95,10 @@ int main(int argc, char** argv) {
 	}
 	else{
 		rest = n % world_size;
-		
+
 		displs[0] = 0;
 		executionArray[0] = range;
-		
+
 		if(0 < rest)
 			executionArray[0] += 1;
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 	Tend = MPI_Wtime(); 
 
 	if (wrank == 0) {
-		printf("Parallel : %f\n", Tend - Tbegin);
+		fprintf(stderr, "Parallel : %f\n", Tend - Tbegin);
 		// displayMatrix(&res);
 
 		Matrix result = createMatrix(n);
@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		printf("Serial : %f\n", MPI_Wtime()-Tbegin);
+		fprintf(stderr, "Serial : %f\n", MPI_Wtime()-Tbegin);
 
 		// Comparaison des résultats.
 		int success = 1;
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
 				break;
 			}
 		}
-		printf("Succès ? %d.\n", success);
+		fprintf(stderr, "Succès ? %d.\n", success);
 
 		free(res.data);
 		free(result.data);
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
 	free(left.data);
 	free(right.data);
 	free(resultLine);
-	
+
 	MPI_Finalize();
 
 	return 0;
