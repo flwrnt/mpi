@@ -98,10 +98,13 @@ int main(int argc, char** argv) {
 		displs[0] = 0;
 		executionArray[0] = range;
 		
+		if(0 < rest)
+			executionArray[0] += 1;
+
 		for(int i = 1; i < world_size; i++){
         	executionArray[i] = range;
 
-			if(i <= rest)
+			if(i < rest)
 				executionArray[i] += 1;
 
         	displs[i] =  displs[i - 1] + executionArray[i - 1];
@@ -140,6 +143,6 @@ int main(int argc, char** argv) {
 
 	if(wrank == 0)
 		printf("Total time : %f ", Tend - Tbegin);
-		
+
 	return 0;
 }
