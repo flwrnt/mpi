@@ -10,6 +10,16 @@ typedef struct Matrix_ {
 } Matrix;
 
 /**
+ * display matrix 
+ */
+void displayMatrix(Matrix *matrix){
+	printf("[ ");
+	for (int i=0; i<matrix->cols*matrix->rows; i++) 
+		printf("%d ", matrix->data[i]);
+	printf("]\n");
+}
+
+/**
  * create matrix & allocate memory 
  */
 Matrix createMatrix(int size) {
@@ -46,24 +56,15 @@ int init(Matrix *left, Matrix *right) {
 	*left = createMatrix(size);
 	*right = createMatrix(size);
 
-	while (fscanf(stdin, "%d%c", &left->data[i], &c) != EOF) {
-    if (c == '\n') break;
+	do {
+		fscanf(stdin, "%d", &left->data[i]);
 		i++;
-  }
+  } while (i<size*size);
+
 	i = 0;
 	while (fscanf(stdin, "%d", &right->data[i]) != EOF) i++;
-
+	
 	return size;
-}
-
-/**
- * display matrix 
- */
-void displayMatrix(Matrix *matrix){
-	printf("[ ");
-	for (int i=0; i<matrix->cols*matrix->rows; i++) 
-		printf("%d ", matrix->data[i]);
-	printf("]\n");
 }
 
 int main(int argc, char **argv) {
@@ -96,8 +97,8 @@ int main(int argc, char **argv) {
 	// broadcast size to other process
 	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	if (world_size > n) {
-		if (wrank == 0) printf("to many process compare to size\n");
+	// exit if to many process for problem
+	if (wrank > n) {
 		MPI_Finalize();
 		return 0;
 	}
